@@ -16,23 +16,39 @@ The main goals of this platform are:
 ![](img/pocGitOps-sync.jpg)
 
 ## Platform architecture
+
+### Main Components
+
+- **GitOps:** ArgoCD, Crossplane
+- **CI/CD:** Argo Events, Argo Workflows, Terratest
+- **Templating:** Kustomize
+
 ### Diagram
-![](img/pocGitOps.jpg)
+![](img/pocGitOps-components.jpg)
 
 ### Tech stack
-- **Kustomize:** it's a simple Kubernetes framework for resource definition templating. It allows to overlay templates in layers, enabling Ops teams to use Trunk-based Development without duplicating code and not being worried about breaking other environments. For example, you can use a shared template for all environments, and promote new changes into each environment one by one, using one overlaying template for each environment.
-- **Git repository:** a source code repository that will be used for the Ops team to provision new infrastructure.
-- **Kubernetes:** base platform on which we will build the Infrastructure Platform.
-- **Argo suite:**
-	- **ArgoCD:** continuous deployment tool that will be used to synchronize the resources deployed in Kubernetes with all the infrastructure definition files stored in the Git repository.
-	- **Argo Events:** it's an event-driven workflow automation framework, that will be looking for changes in the resources deployed in Kubernetes and on any change, trigger a pipeline to test if the infrastructure is deployed successfully.
-	- **Argo Workflow:** is a workflow engine for orchestrating parallel jobs on Kubernetes, that will run when triggered, a pipeline that will test if the deployed infrastructure is deployed successfully and in case of failure run a "revert commit" into Git to revert last changes.
-- **Terratest:** a testing framework based in GoLang, used to write all the infrastructure tests.
-- **Crossplane:** this framework allows teams to define infrastructure through Kubernetes CRD and also keep the infrastructure state synchronized with the desired state defined in those CRD. This framework also allow teams to define their own CRD, for example to compose multiple infrastructure components in a single Kubernetes CRD. It will be used to deploy new infrastructure into the Cloud Provider and maintain synchronization between current state and the desired state.
 
-Only for this Proof of Concept:
+#### Base components
+- **Kubernetes:** base platform on which we will build the Infrastructure Platform.
+
+Only for local testing:
 - **LocalStack:**
-- **Microk8s & multipass:** 
+- **Microk8s & multipass or Colima:** 
+
+#### GitOps
+- **Git GitOps state repository:** a source code repository that will hold the desired state of the infrastructure. This repository will act as the source of truth for ArgoCD.
+- **Crossplane:** this framework allows teams to define infrastructure through Kubernetes CRD and also keep the infrastructure state synchronized with the desired state defined in those CRD. This framework also allow teams to define their own CRD, for example to compose multiple infrastructure components in a single Kubernetes CRD. It will be used to deploy new infrastructure into the Cloud Provider and maintain synchronization between current state and the desired state.
+- **ArgoCD:** continuous deployment tool that will be used to synchronize the resources deployed in Kubernetes with all the infrastructure definition files stored in the Git repository.
+
+#### CI/CD
+- **Git User repository:** a source code repository that will be used for the Ops team to provision new infrastructure.
+- **Argo Events:** it's an event-driven workflow automation framework, that will be looking for changes in the resources deployed in Kubernetes and on any change, trigger a pipeline to test if the infrastructure is deployed successfully.
+- **Argo Workflow:** is a workflow engine for orchestrating parallel jobs on Kubernetes, that will run when triggered, a pipeline that will test if the deployed infrastructure is deployed successfully and in case of failure run a "revert commit" into Git to revert last changes.
+- **Terratest:** a testing framework based in GoLang, used to write all the infrastructure tests.
+
+#### Templating
+- **Kustomize:** it's a simple Kubernetes framework for resource definition templating. It allows to overlay templates in layers, enabling Ops teams to use Trunk-based Development without duplicating code and not being worried about breaking other environments. For example, you can use a shared template for all environments, and promote new changes into each environment one by one, using one overlaying template for each environment.
+
 
 
 ## Requirements
@@ -92,6 +108,7 @@ kubectl create ns localstack
 2. Deploy LocalStack:
 ```sh
 helm repo add localstack-repo https://helm.localstack.cloud
+helm repo update
 helm upgrade --install localstack localstack-repo/localstack -n localstack
 ```
 > By default, credentials to access LocalStack API are `test/test`.
